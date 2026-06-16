@@ -49,3 +49,6 @@ O projeto estará disponível em `http://127.0.0.1:8000/`.
 | `make setup` | Cria o `.env`, aplica `migrate` e gera o superuser padrão |
 | `make run` | Inicia o servidor de desenvolvimento do Django |
 | `make migrate` | Aplica as migrações pendentes no banco de dados |
+| `make lint` | Executa o linter (`ruff check`) |
+| `make format` | Formata o código (`ruff format`) |
+| `make check` | Valida lint e formatação (mesmo fluxo do CI) |

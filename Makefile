@@ -1,10 +1,13 @@
-.PHONY: help setup run migrate clean
+.PHONY: help setup run migrate lint format check clean
 
 help:
 	@echo "Comandos disponiveis:"
 	@echo "  make setup      - Prepara o ambiente (.env, migrate e superuser)"
 	@echo "  make run        - Roda o servidor de desenvolvimento do Django"
 	@echo "  make migrate    - Aplica as migracoes do banco de dados"
+	@echo "  make lint       - Executa o linter (ruff check)"
+	@echo "  make format     - Formata o codigo (ruff format)"
+	@echo "  make check      - Valida lint e formatacao (usado no CI)"
 
 setup:
 	uv run python setup.py
@@ -14,3 +17,12 @@ run:
 
 migrate:
 	uv run python manage.py migrate
+
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format .
+
+check: lint
+	uv run ruff format --check .

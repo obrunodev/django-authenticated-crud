@@ -15,3 +15,39 @@ dev = [
     "pytest-django>=4.12.0",
     "ruff>=0.15.16",
 ]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+src = ["core"]
+exclude = [
+    ".venv",
+    "migrations",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "DJ",
+    "RUF",
+]
+ignore = [
+    "E501",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*.py" = ["RUF012"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
