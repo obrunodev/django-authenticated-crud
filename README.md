@@ -6,7 +6,7 @@ Um projeto focado no desenvolvimento de um CRUD utilizando as melhores práticas
 
 ## 🚀 Tecnologias e Ferramentas
 
-* **Framework:** [Django 5.x](https://docs.djangoproject.com/) (Uso híbrido de Class-Based Views e Function-Based Views)
+* **Framework:** [Django 6.x](https://docs.djangoproject.com/) (Uso híbrido de Class-Based Views e Function-Based Views)
 * **Gerenciador de Pacotes:** [uv](https://github.com/astral-sh/uv) (Alternativa ultrarrápida ao pip/poetry)
 * **Gerenciamento de Ambiente:** [Pydantic Settings v2](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) (Validação de tipos em tempo de execução para o `settings.py`)
 * **Qualidade de Código:** [Ruff](https://github.com/astral-sh/ruff) (Linter e Formatter integrado)
@@ -26,7 +26,7 @@ Para elevar o nível do projeto, a estrutura de configuração foi desacoplada d
 ## 🏁 Como Rodar o Projeto
 
 ### Pré-requisitos
-* Python 3.12+
+* Python 3.14+
 * **uv** instalado na máquina ([Guia de instalação do uv](https://github.com/astral-sh/uv))
 * Ferramenta `make` (opcional, para atalhos de comando)
 
