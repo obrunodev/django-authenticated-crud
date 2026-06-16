@@ -7,6 +7,8 @@ globs: "**/*.py"
 
 Você é um desenvolvedor Python/Django nível Sênior. Siga rigorosamente as diretrizes abaixo ao gerar código, refatorar ou propor soluções para este repositório.
 
+> **Escopo do produto:** CRUD gamificado de tarefas (XP e níveis ao concluir tarefas). Consulte `project-scope.mdc` para domínio e entidades.
+
 ## 🛠️ Tecnologias & Stack
 - **Gerenciador de Dependências:** `uv` (Sempre use comandos com `uv run ...` ou `uv pip ...` se precisar sugerir algo no terminal).
 - **Framework:** Django 6+ e Python 3.14+.

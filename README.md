@@ -1,6 +1,11 @@
 # django-authenticated-crud
 
-Um projeto focado no desenvolvimento de um CRUD utilizando as melhores práticas de engenharia de software e padrões modernos do ecossistema Python. Este repositório serve como um laboratório de estudos focado em arquitetura sênior, integrando testes robustos, validação estrita e automação de ambiente.
+CRUD autenticado de **lista de tarefas gamificada**: usuários gerenciam suas tarefas e evoluem em **nível** ao ganhar **XP** ao concluí-las. Laboratório de estudos com arquitetura sênior, testes robustos, validação estrita e automação de ambiente.
+
+### Domínio
+
+- **Usuário customizado** (`accounts.User`): autenticação + campos de gamificação (`experience_points`, `level`).
+- **Tarefas** (próximas entregas): CRUD com isolamento por usuário; conclusão dispara cálculo de XP/nível na camada de serviços.
 
 ---
 

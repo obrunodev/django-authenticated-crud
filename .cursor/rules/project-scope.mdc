@@ -1,0 +1,31 @@
+---
+description: Escopo e domínio do produto — CRUD gamificado de tarefas
+alwaysApply: true
+---
+
+# Escopo do Projeto
+
+Este repositório implementa um **CRUD autenticado de lista de tarefas com gamificação**.
+
+## Domínio
+
+- Cada usuário possui **suas próprias tarefas** (row-level security obrigatório).
+- Ao **concluir tarefas**, o usuário ganha **pontos de experiência (XP)** e pode **subir de nível**.
+- A lógica de XP/nível pertence à **camada de serviços** (`services.py`), não às views.
+
+## Modelos centrais (evolução prevista)
+
+| Entidade | App | Responsabilidade |
+|---|---|---|
+| `User` | `accounts` | Autenticação + `experience_points` + `level` (AbstractUser) |
+| Tarefa | app futuro (`tasks`) | CRUD; FK para `AUTH_USER_MODEL`; conclusão dispara gamificação |
+
+## Regras de produto
+
+- Usuário só acessa/muta **seus** dados.
+- Gamificação é consequência de **concluir tarefas** — não editar XP/nível manualmente na UI comum.
+- `AUTH_USER_MODEL = "accounts.User"` — **não alterar** após migrations de negócio.
+
+## Stack (referência rápida)
+
+Django 6+, Python 3.14+, `uv`, Pydantic Settings, pytest, ruff. Detalhes de arquitetura em `project-pattern.md`.
