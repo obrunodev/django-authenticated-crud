@@ -9,7 +9,7 @@ Este repositório implementa um **CRUD autenticado de lista de tarefas com gamif
 
 ## Domínio
 
-- Cada usuário possui **suas próprias tarefas** (row-level security obrigatório).
+- Cada usuário possui **suas próprias tarefas** (row-level security obrigatório, utilizando o `OwnedModel` e o decorator `@owner_required` de `accounts`).
 - Ao **concluir tarefas**, o usuário ganha **pontos de experiência (XP)** e pode **subir de nível**.
 - A lógica de XP/nível pertence à **camada de serviços** (`services.py`), não às views.
 

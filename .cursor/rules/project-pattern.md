@@ -20,6 +20,8 @@ Você é um desenvolvedor Python/Django nível Sênior. Siga rigorosamente as di
 - **Foco em Performance (ORM):** Ao criar queries de listagem ou detalhe, sempre avalie e previna o problema de N+1 usando `select_related` e `prefetch_related`.
 - **Validações:** Valide os dados de entrada rigorosamente antes de processá-los na camada de negócio.
 - **Segurança Obrigatória (Row-Level Security):** Toda query de mutação (Update/Delete) ou visualização de dados sensíveis deve garantir que o objeto pertence ao `request.user`.
+  - Use o model abstrato `OwnedModel` (e seu queryset/manager `OwnedQuerySet.for_user()`) definidos em `accounts/models.py` para os models que requerem posse do usuário.
+  - Nas views, use o decorator `@owner_required(model_class)` definido em `accounts/decorators.py` para validar a posse de forma limpa e segura, retornando `Http404` se o objeto não pertencer ao usuário.
 
 ## 🎨 Estilo de Código & Boas Práticas
 - Use tipagem estática (`type hints`) em todas as funções e métodos novos.

@@ -1,7 +1,13 @@
+from unittest.mock import MagicMock
+
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.http import Http404
 from django.test import TestCase, override_settings
 from django.urls import reverse
+
+from accounts.decorators import owner_required
+from accounts.models import OwnedQuerySet
 
 User = get_user_model()
 
@@ -134,3 +140,77 @@ class AuthTests(TestCase):
             {"username": self.username, "password": "wrongpassword"},
         )
         self.assertEqual(response.status_code, 200)
+
+
+class RowLevelSecurityTests(TestCase):
+    def setUp(self) -> None:
+        self.username = "testuser"
+        self.email = "testuser@example.com"
+        self.password = "SecurePassword123"
+        self.user = User.objects.create_user(
+            username=self.username, email=self.email, password=self.password
+        )
+
+    def test_owned_queryset_unauthenticated_user(self) -> None:
+        """Garante que OwnedQuerySet.for_user retorna nenhum resultado para não autenticados."""
+        user = MagicMock()
+        user.is_authenticated = False
+
+        qs = OwnedQuerySet()
+        qs.none = MagicMock(return_value="none_result")
+        qs.filter = MagicMock()
+
+        result = qs.for_user(user)
+        self.assertEqual(result, "none_result")
+        qs.none.assert_called_once()
+        qs.filter.assert_not_called()
+
+    def test_owned_queryset_authenticated_user(self) -> None:
+        """Garante que OwnedQuerySet.for_user filtra as instâncias pelo usuário logado."""
+        user = MagicMock()
+        user.is_authenticated = True
+
+        qs = OwnedQuerySet()
+        qs.none = MagicMock()
+        qs.filter = MagicMock(return_value="filtered_result")
+
+        result = qs.for_user(user)
+        self.assertEqual(result, "filtered_result")
+        qs.filter.assert_called_once_with(user=user)
+        qs.none.assert_not_called()
+
+    def test_owner_required_decorator_success(self) -> None:
+        """Garante que o decorator owner_required permite acesso e injeta o objeto correto."""
+        mock_model = MagicMock()
+        mock_obj = MagicMock()
+        mock_model.objects.get.return_value = mock_obj
+
+        @owner_required(mock_model)
+        def dummy_view(request, obj):
+            return ("success", obj)
+
+        request = MagicMock()
+        request.user = self.user
+
+        status, obj = dummy_view(request, pk=42)
+        self.assertEqual(status, "success")
+        self.assertEqual(obj, mock_obj)
+        mock_model.objects.get.assert_called_once_with(pk=42, user=self.user)
+
+    def test_owner_required_decorator_not_found(self) -> None:
+        """Garante que o decorator owner_required levanta Http404 se o objeto não pertencer ao usuário."""
+        mock_model = MagicMock()
+        from django.core.exceptions import ObjectDoesNotExist
+
+        mock_model.DoesNotExist = ObjectDoesNotExist
+        mock_model.objects.get.side_effect = ObjectDoesNotExist()
+
+        @owner_required(mock_model)
+        def dummy_view(request, obj):
+            return "success"
+
+        request = MagicMock()
+        request.user = self.user
+
+        with self.assertRaises(Http404):
+            dummy_view(request, pk=42)
