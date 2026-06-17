@@ -1,5 +1,19 @@
 from django.db import models
-from accounts.models import OwnedModel
+from django.utils import timezone
+from accounts.models import OwnedModel, OwnedQuerySet
+
+
+class TaskQuerySet(OwnedQuerySet):
+    def delete(self):
+        return self.update(is_deleted=True, deleted_at=timezone.now())
+
+
+class TaskManager(models.Manager.from_queryset(TaskQuerySet)):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+    def all_with_deleted(self):
+        return super().get_queryset()
 
 
 class Task(OwnedModel):
@@ -32,6 +46,17 @@ class Task(OwnedModel):
         blank=True,
         verbose_name="concluída em",
     )
+    is_deleted = models.BooleanField(
+        default=False,
+        verbose_name="excluída",
+    )
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="excluída em",
+    )
+
+    objects = TaskManager()
 
     class Meta:
         verbose_name = "tarefa"
@@ -40,3 +65,9 @@ class Task(OwnedModel):
 
     def __str__(self) -> str:
         return self.title
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save(update_fields=["is_deleted", "deleted_at"])
+

@@ -358,7 +358,14 @@ class TaskViewTests(TestCase):
         self.assertEqual(self.user.experience_points, 0)
         response = self.client.post(reverse("tasks:delete", kwargs={"pk": self.task.pk}), HTTP_HX_REQUEST="true")
         self.assertEqual(response.status_code, 200)
+        
+        # Verifica se a tarefa sumiu da busca padrão (está inativa)
         self.assertFalse(Task.objects.filter(pk=self.task.pk).exists())
+        # Mas continua existindo logicamente como excluída no banco
+        soft_deleted_task = Task.objects.all_with_deleted().get(pk=self.task.pk)
+        self.assertTrue(soft_deleted_task.is_deleted)
+        self.assertIsNotNone(soft_deleted_task.deleted_at)
+        
         self.assertEqual(response["HX-Trigger"], "task-updated")
         self.user.refresh_from_db()
         self.assertEqual(self.user.experience_points, 0)
@@ -377,12 +384,20 @@ class TaskViewTests(TestCase):
         
         response = self.client.post(reverse("tasks:delete", kwargs={"pk": completed_task.pk}), HTTP_HX_REQUEST="true")
         self.assertEqual(response.status_code, 200)
+        
+        # Verifica se sumiu da busca padrão
         self.assertFalse(Task.objects.filter(pk=completed_task.pk).exists())
+        # Mas continua existindo como excluída no banco
+        soft_deleted_completed = Task.objects.all_with_deleted().get(pk=completed_task.pk)
+        self.assertTrue(soft_deleted_completed.is_deleted)
+        self.assertIsNotNone(soft_deleted_completed.deleted_at)
+        
         self.assertEqual(response["HX-Trigger"], "task-updated")
         
         self.user.refresh_from_db()
         # XP deve cair de 50 para 30
         self.assertEqual(self.user.experience_points, 30)
+
 
     def test_stats_partial_view_response(self) -> None:
         """Garante que a stats view do accounts renderiza os valores atuais do usuário."""
@@ -437,4 +452,43 @@ class TaskAdminTests(TestCase):
             1,
             f"N+1 detectado: queries com 1 task = {queries_with_one}, com 11 tasks = {queries_with_many}"
         )
+
+
+class TaskSoftDeleteTests(TestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            username="testuser", password="Password123"
+        )
+        self.task1 = Task.objects.create(user=self.user, title="Task 1")
+        self.task2 = Task.objects.create(user=self.user, title="Task 2")
+
+    def test_model_delete_performs_soft_delete(self) -> None:
+        """Garante que deletar a model via task.delete() marca a tarefa como excluída no banco."""
+        self.task1.delete()
+        
+        # Não deve ser encontrada no manager padrão
+        self.assertFalse(Task.objects.filter(pk=self.task1.pk).exists())
+        
+        # Deve ser encontrada com all_with_deleted
+        task = Task.objects.all_with_deleted().get(pk=self.task1.pk)
+        self.assertTrue(task.is_deleted)
+        self.assertIsNotNone(task.deleted_at)
+        
+        # A outra tarefa deve continuar ativa
+        self.assertTrue(Task.objects.filter(pk=self.task2.pk).exists())
+
+    def test_queryset_delete_performs_soft_delete(self) -> None:
+        """Garante que a deleção em lote no QuerySet marca as tarefas como excluídas."""
+        Task.objects.all().delete()
+        
+        # Nenhuma tarefa deve estar ativa no manager padrão
+        self.assertEqual(Task.objects.count(), 0)
+        
+        # Ambas devem estar excluídas logicamente
+        all_tasks = Task.objects.all_with_deleted()
+        self.assertEqual(all_tasks.count(), 2)
+        for task in all_tasks:
+            self.assertTrue(task.is_deleted)
+            self.assertIsNotNone(task.deleted_at)
+
 
