@@ -60,3 +60,10 @@ def logout_view(request: HttpRequest) -> HttpResponse:
 def dashboard_view(request: HttpRequest) -> HttpResponse:
     """Exibe o painel do usuário autenticado com suas estatísticas."""
     return render(request, "accounts/dashboard.html")
+
+
+@login_required
+def stats_view(request: HttpRequest) -> HttpResponse:
+    """Retorna o fragmento HTML contendo as estatísticas de gamificação do usuário."""
+    return render(request, "accounts/partials/stats.html")
+

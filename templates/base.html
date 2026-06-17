@@ -18,9 +18,9 @@
         }
     </style>
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-center items-center p-4 selection:bg-indigo-500 selection:text-white">
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="bg-slate-950 text-slate-100 min-h-screen flex flex-col {% block body_layout_classes %}justify-center items-center{% endblock %} p-4 selection:bg-indigo-500 selection:text-white">
 
-    <main class="w-full max-w-md">
+    <main class="w-full {% block container_class %}max-w-md{% endblock %}">
         {% block content %}
         {% endblock %}
     </main>

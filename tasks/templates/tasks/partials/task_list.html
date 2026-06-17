@@ -1,0 +1,142 @@
+<style>
+    .task-fading {
+        pointer-events: none;
+        overflow: hidden;
+        transition: all 1s ease-in-out;
+    }
+    
+    .filter-pending .task-fading {
+        animation: fadeOutPending 1s forwards;
+    }
+    
+    .filter-completed .task-fading {
+        animation: fadeOutCompleted 1s forwards;
+    }
+    
+    .filter-all .task-fading {
+        animation: fadeAllTransition 1s forwards;
+    }
+
+    @keyframes fadeOutPending {
+        0% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.95); max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; border: none; }
+    }
+
+    @keyframes fadeOutCompleted {
+        0% { opacity: 0.6; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.95); max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; border: none; }
+    }
+
+    @keyframes fadeAllTransition {
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 0.6; }
+    }
+</style>
+
+<!-- Filtros e Busca -->
+<form hx-get="{% url 'tasks:list' %}" hx-target="#task-app-root" hx-trigger="submit" hx-swap="innerHTML" class="flex flex-col sm:flex-row gap-3 mb-6">
+    <div class="relative flex-1 w-full">
+        <input type="text" name="q" value="{{ q }}" 
+               hx-get="{% url 'tasks:list' %}" hx-trigger="keyup changed delay:300ms" hx-target="#task-app-root" hx-include="[name='status']"
+               placeholder="Pesquisar tarefas..." 
+               class="w-full bg-slate-950 border border-slate-900 focus:border-indigo-500/50 rounded-xl px-4 py-2.5 pl-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-all">
+        <!-- Ícone de Busca -->
+        <span class="absolute left-3.5 top-3.5 text-slate-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" />
+            </svg>
+        </span>
+    </div>
+    <div class="flex gap-2 sm:w-48 shrink-0">
+        <select name="status" 
+                hx-get="{% url 'tasks:list' %}" hx-trigger="change" hx-target="#task-app-root" hx-include="[name='q']"
+                class="bg-slate-950 border border-slate-900 rounded-xl px-3 py-2.5 text-xs text-slate-400 focus:outline-none focus:border-indigo-500/50 transition-all cursor-pointer flex-1">
+            <option value="all" {% if status == 'all' %}selected{% endif %}>Todas as Tarefas</option>
+            <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pendentes</option>
+            <option value="completed" {% if status == 'completed' %}selected{% endif %}>Concluídas</option>
+        </select>
+    </div>
+</form>
+
+<!-- Formulário de Criação -->
+<div class="border-t border-slate-800/40 pt-6 mb-8">
+    <h3 class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-4">Novo Objetivo</h3>
+    <form hx-post="{% url 'tasks:create' %}" hx-target="#task-app-root" class="flex flex-col gap-3" hx-on::after-request="if (event.detail.successful) this.reset()">
+        <div class="flex gap-2">
+            <div class="flex-1">
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <p class="text-red-500 text-[10px] mt-1">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div class="flex flex-col items-center">
+                <div class="flex items-center gap-1 bg-slate-950 border border-slate-900 rounded-xl px-2.5 h-[38px]">
+                    <span class="text-[9px] font-extrabold text-amber-500 tracking-wider">XP</span>
+                    {{ form.xp_reward }}
+                </div>
+                {% if form.xp_reward.errors %}
+                    <p class="text-red-500 text-[10px] mt-1">{{ form.xp_reward.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <p class="text-red-500 text-[10px] mt-1">{{ form.description.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="bg-indigo-500 hover:bg-indigo-400 active:scale-[0.98] text-slate-950 font-bold rounded-xl py-2.5 text-xs tracking-wider uppercase transition-all cursor-pointer shadow-lg shadow-indigo-600/10">
+            Adicionar Objetivo
+        </button>
+    </form>
+</div>
+
+<!-- Lista de Tarefas -->
+<div id="task-list-container" class="flex flex-col gap-3 filter-{{ status }}">
+    <h3 class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">Seus Objetivos</h3>
+    {% for task in page_obj %}
+        {% include 'tasks/partials/task_row.html' %}
+    {% empty %}
+        <div class="text-center p-8 border border-dashed border-slate-900 rounded-2xl bg-slate-950/10">
+            <span class="text-slate-600 text-xs">Nenhum objetivo encontrado.</span>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Paginação -->
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between border-t border-slate-800/40 pt-4 mt-6">
+    <span class="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </span>
+    
+    <div class="flex gap-2">
+        {% if page_obj.has_previous %}
+            <button hx-get="{% url 'tasks:list' %}?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status }}" 
+                    hx-target="#task-app-root"
+                    class="bg-slate-950 hover:bg-slate-900 border border-slate-900 hover:border-slate-800 text-slate-400 rounded-lg px-2.5 py-1.5 text-xs transition-all cursor-pointer">
+                Anterior
+            </button>
+        {% else %}
+            <button class="bg-slate-950/40 border border-slate-950/20 text-slate-700 rounded-lg px-2.5 py-1.5 text-xs cursor-not-allowed" disabled>
+                Anterior
+            </button>
+        {% endif %}
+        
+        {% if page_obj.has_next %}
+            <button hx-get="{% url 'tasks:list' %}?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status }}" 
+                    hx-target="#task-app-root"
+                    class="bg-slate-950 hover:bg-slate-900 border border-slate-900 hover:border-slate-800 text-slate-400 rounded-lg px-2.5 py-1.5 text-xs transition-all cursor-pointer">
+                Próxima
+            </button>
+        {% else %}
+            <button class="bg-slate-950/40 border border-slate-950/20 text-slate-700 rounded-lg px-2.5 py-1.5 text-xs cursor-not-allowed" disabled>
+                Próxima
+            </button>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

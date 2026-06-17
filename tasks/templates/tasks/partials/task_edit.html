@@ -1,0 +1,54 @@
+<div class="task-row-container p-4 rounded-xl border border-indigo-500/30 bg-slate-950/80 shadow-md transition-all">
+    <form hx-post="{% url 'tasks:edit' task.id %}" 
+          hx-target="closest .task-row-container" 
+          hx-swap="outerHTML" 
+          class="flex flex-col gap-3">
+        
+        <div class="flex gap-2">
+            <!-- Título -->
+            <div class="flex-1">
+                <input type="text" name="title" value="{{ form.title.value|default:'' }}" required
+                       class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full transition-all">
+                {% if form.title.errors %}
+                    <p class="text-red-500 text-[10px] mt-1">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- XP Reward -->
+            <div class="flex items-center gap-1 bg-slate-950 border border-slate-900 rounded-xl px-2.5 h-[34px]">
+                <span class="text-[9px] font-extrabold text-amber-500 tracking-wider">XP</span>
+                <input type="number" name="xp_reward" value="{{ form.xp_reward.value|default:10 }}" required min="1" max="100"
+                       class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-16 text-center transition-all">
+                {% if form.xp_reward.errors %}
+                    <p class="text-red-500 text-[10px] mt-1">{{ form.xp_reward.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Descrição -->
+        <div>
+            <textarea name="description" rows="2"
+                      class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full h-16 resize-none transition-all">{{ form.description.value|default:'' }}</textarea>
+            {% if form.description.errors %}
+                <p class="text-red-500 text-[10px] mt-1">{{ form.description.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="flex justify-end gap-2 mt-1">
+            <!-- Cancelar -->
+            <button type="button" 
+                    hx-get="{% url 'tasks:detail' task.id %}" 
+                    hx-target="closest .task-row-container" 
+                    hx-swap="outerHTML"
+                    class="bg-slate-950 hover:bg-slate-900 border border-slate-900 hover:border-slate-800 text-slate-400 font-bold rounded-lg px-3 py-1.5 text-[10px] uppercase tracking-wider transition-all cursor-pointer">
+                Cancelar
+            </button>
+            <!-- Salvar -->
+            <button type="submit" 
+                    class="bg-indigo-600 hover:bg-indigo-500 text-slate-950 hover:text-white font-extrabold rounded-lg px-4 py-1.5 text-[10px] uppercase tracking-wider transition-all cursor-pointer">
+                Salvar
+            </button>
+        </div>
+    </form>
+</div>

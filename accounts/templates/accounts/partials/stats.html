@@ -1,0 +1,36 @@
+<!-- Estatísticas de Gamificação (XP e Nível) -->
+<div id="user-stats" 
+     hx-get="{% url 'stats' %}" 
+     hx-trigger="task-updated from:body" 
+     hx-swap="outerHTML"
+     class="bg-gradient-to-br from-indigo-950/40 via-purple-950/20 to-slate-950/80 border border-indigo-500/20 rounded-2xl p-6 relative overflow-hidden">
+    <!-- Detalhe decorativo de fundo -->
+    <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Seu Progresso</p>
+            <h3 class="text-lg font-bold text-slate-200 mt-1">Status do Herói</h3>
+        </div>
+        <!-- Badge de Nível -->
+        <div class="bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+            <span>NÍVEL</span>
+            <span class="text-sm bg-indigo-500 text-slate-950 px-2 py-0.5 rounded-full font-extrabold">{{ request.user.level }}</span>
+        </div>
+    </div>
+
+    <!-- Barra de XP -->
+    <div class="mt-6">
+        <div class="flex justify-between text-xs font-semibold text-slate-400 mb-2">
+            <span>Experiência (XP)</span>
+            <span>{{ request.user.experience_points }} XP</span>
+        </div>
+        <!-- Container da barra -->
+        <div class="w-full bg-slate-950 border border-slate-900 rounded-full h-3.5 overflow-hidden p-[2px]">
+            <!-- Progresso animado -->
+            <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full rounded-full transition-all duration-500"
+                 style="width: {% widthratio request.user.experience_points 100 100 %}%"></div>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-2 text-right">Próximo nível a cada 100 XP</p>
+    </div>
+</div>
