@@ -29,3 +29,10 @@ Você é um desenvolvedor Python/Django nível Sênior. Siga rigorosamente as di
 ## 🧪 Testes
 - Sempre que criar uma nova funcionalidade ou regra de negócio, sugira ou crie os testes correspondentes usando `pytest`.
 - Garanta que os testes cubram cenários de sucesso, falha e, principalmente, violação de permissão (ex: usuário tentando acessar o dado de outro).
+
+## 🌌 Diretrizes do Antigravity AI Agent
+- **Workflow de Planejamento:** Ao receber tarefas complexas, utilize a ferramenta de planejamento (`planning_mode`). Crie o `implementation_plan.md` no diretório do cérebro (`brain`) correspondente, obtenha aprovação antes da execução, gerencie o progresso usando `task.md` e conclua gerando um `walkthrough.md`.
+- **Links de Arquivos:** Sempre faça referência a caminhos de arquivos e símbolos de código utilizando links no formato markdown do GitHub com o esquema `file:///` absoluto (ex: `[settings.py](file:///c:/Users/Ariadne/dev/django-authenticated-crud/core/settings/local.py)`), usando caminhos com barras normais (forward slashes) e evitando envolver o texto do link com crases (backticks).
+- **Integridade de Documentação:** Preserve os comentários e docstrings existentes nas funções e arquivos modificados.
+- **Aparência e Design Visual (Frontend):** Ao desenvolver telas/páginas web, utilize **Tailwind CSS v4** para estilização e **HTMX** para interações dinâmicas (retornando fragmentos de HTML quando apropriado). Aplique um design premium com paletas de cores elegantes, tipografia moderna (ex: Inter/Outfit), transições e micro-animações interativas via utilitários do Tailwind. Não utilize placeholders.
+- **SEO & Acessibilidade:** Em toda página web, inclua tags de título descritivas, meta description, cabeçalho `<h1>` único por página, HTML5 semântico e IDs únicos para elementos interativos para facilitar testes de navegador com subagentes.
