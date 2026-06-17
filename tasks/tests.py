@@ -396,3 +396,45 @@ class TaskViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "75 XP")
         self.assertContains(response, "4")
+
+
+class TaskAdminTests(TestCase):
+    def setUp(self) -> None:
+        self.admin_user = User.objects.create_superuser(
+            username="admin", email="admin@example.com", password="Password123"
+        )
+        self.client.login(username="admin", password="Password123")
+
+    def test_admin_changelist_no_n_plus_one_queries(self) -> None:
+        """Garante que o número de queries para listar tarefas no admin não cresce linearmente com a quantidade de tarefas."""
+        url = reverse("admin:tasks_task_changelist")
+
+        # Criar 1 tarefa
+        u1 = User.objects.create_user(username="u1", password="Password123")
+        Task.objects.create(user=u1, title="T1")
+
+        # Medir queries com 1 tarefa
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as ctx_1:
+            self.client.get(url)
+        queries_with_one = len(ctx_1.captured_queries)
+
+        # Criar mais 10 tarefas de usuários diferentes
+        for i in range(10):
+            u = User.objects.create_user(username=f"user_{i}", password="Password123")
+            Task.objects.create(user=u, title=f"T_{i}")
+
+        with CaptureQueriesContext(connection) as ctx_10:
+            self.client.get(url)
+        queries_with_many = len(ctx_10.captured_queries)
+
+        # Se houver N+1, queries_with_many será maior que queries_with_one em pelo menos 10 queries.
+        # Sem N+1, o número de queries deve ser o mesmo (ou quase o mesmo).
+        self.assertLessEqual(
+            queries_with_many - queries_with_one,
+            1,
+            f"N+1 detectado: queries com 1 task = {queries_with_one}, com 11 tasks = {queries_with_many}"
+        )
+
