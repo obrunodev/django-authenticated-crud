@@ -17,6 +17,14 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str | None = None
     SECURE_SSL_REDIRECT: bool = True
+    SESSION_COOKIE_SECURE: bool = True
+    CSRF_COOKIE_SECURE: bool = True
+    SECURE_HSTS_SECONDS: int = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS: bool = True
+    SECURE_HSTS_PRELOAD: bool = True
+    SECURE_PROXY_SSL_HEADER_NAME: str | None = "HTTP_X_FORWARDED_PROTO"
+    SECURE_PROXY_SSL_HEADER_VALUE: str | None = "https"
+    SECURE_REFERRER_POLICY: str = "same-origin"
 
     @model_validator(mode="after")
     def validate_environment(self) -> Self:
