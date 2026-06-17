@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     SECURE_PROXY_SSL_HEADER_NAME: str | None = "HTTP_X_FORWARDED_PROTO"
     SECURE_PROXY_SSL_HEADER_VALUE: str | None = "https"
     SECURE_REFERRER_POLICY: str = "same-origin"
+    LOGIN_RATELIMIT_LIMIT: int = 5
+    LOGIN_RATELIMIT_PERIOD: int = 60  # seconds
 
     @model_validator(mode="after")
     def validate_environment(self) -> Self:

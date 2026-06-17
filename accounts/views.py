@@ -6,9 +6,11 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
+from accounts.decorators import rate_limit_login
 from accounts.forms import UserRegisterForm
 
 
+@rate_limit_login
 def login_view(request: HttpRequest) -> HttpResponse:
     """Realiza o login de um usuário existente usando formulário tradicional."""
     if request.user.is_authenticated:

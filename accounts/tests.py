@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core.cache import cache
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 User = get_user_model()
@@ -7,6 +8,7 @@ User = get_user_model()
 
 class AuthTests(TestCase):
     def setUp(self) -> None:
+        cache.clear()
         self.username = "testuser"
         self.email = "testuser@example.com"
         self.password = "SecurePassword123"
@@ -72,3 +74,63 @@ class AuthTests(TestCase):
         response = self.client.post(reverse("logout"), HTTP_HX_REQUEST="true")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["HX-Redirect"], reverse("login"))
+
+    @override_settings(LOGIN_RATELIMIT_LIMIT=3)
+    def test_login_rate_limiting_blocks_after_max_attempts(self) -> None:
+        """Garante que requisições consecutivas POST acima do limite são bloqueadas."""
+        for _ in range(3):
+            response = self.client.post(
+                reverse("login"),
+                {"username": self.username, "password": "wrongpassword"},
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(response, "accounts/login.html")
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": self.username, "password": "wrongpassword"},
+        )
+        self.assertEqual(response.status_code, 429)
+        self.assertTemplateUsed(response, "accounts/login.html")
+        self.assertContains(
+            response,
+            "Muitas tentativas de login. Por favor, tente novamente mais tarde.",
+            status_code=429,
+        )
+
+    @override_settings(LOGIN_RATELIMIT_LIMIT=3)
+    def test_login_rate_limiting_allows_get_requests(self) -> None:
+        """Garante que requisições GET ainda são permitidas mesmo sob bloqueio de rate limit."""
+        for _ in range(4):
+            self.client.post(
+                reverse("login"),
+                {"username": self.username, "password": "wrongpassword"},
+            )
+
+        response = self.client.get(reverse("login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/login.html")
+
+    @override_settings(LOGIN_RATELIMIT_LIMIT=3)
+    def test_login_rate_limiting_clears_on_success(self) -> None:
+        """Garante que o contador de rate limit é reiniciado após um login bem-sucedido."""
+        for _ in range(2):
+            response = self.client.post(
+                reverse("login"),
+                {"username": self.username, "password": "wrongpassword"},
+            )
+            self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": self.username, "password": self.password},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        self.client.logout()
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": self.username, "password": "wrongpassword"},
+        )
+        self.assertEqual(response.status_code, 200)
