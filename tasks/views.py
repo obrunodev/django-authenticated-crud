@@ -15,7 +15,9 @@ def _get_filtered_tasks(request: HttpRequest):
 
     q = request.GET.get("q", "").strip()
     if q:
-        tasks = tasks.filter(title__icontains=q) | tasks.filter(description__icontains=q)
+        tasks = tasks.filter(title__icontains=q) | tasks.filter(
+            description__icontains=q
+        )
 
     status = request.GET.get("status", "pending")
     if status == "completed":
@@ -134,10 +136,14 @@ def task_edit_view(request: HttpRequest, task: Task) -> HttpResponse:
             response["HX-Trigger"] = "task-updated"
             return response
 
-        return render(request, "tasks/partials/task_edit.html", {"form": form, "task": task})
+        return render(
+            request, "tasks/partials/task_edit.html", {"form": form, "task": task}
+        )
 
     form = TaskForm(instance=task)
-    return render(request, "tasks/partials/task_edit.html", {"form": form, "task": task})
+    return render(
+        request, "tasks/partials/task_edit.html", {"form": form, "task": task}
+    )
 
 
 @login_required

@@ -209,7 +209,7 @@ class TaskViewTests(TestCase):
         self.other_user = User.objects.create_user(
             username="otheruser", email="other@example.com", password=self.password
         )
-        
+
         # Tarefa padrão para o usuário
         self.task = Task.objects.create(
             user=self.user,
@@ -228,11 +228,11 @@ class TaskViewTests(TestCase):
             reverse("tasks:detail", kwargs={"pk": self.task.pk}),
             reverse("tasks:delete", kwargs={"pk": self.task.pk}),
         ]
-        
+
         for url in urls:
             response = self.client.get(url)
             self.assertEqual(response.status_code, 302, f"Falhou em: {url}")
-            
+
             # Para métodos POST, tenta requisição anônima também
             if url not in [
                 reverse("tasks:list"),
@@ -245,12 +245,12 @@ class TaskViewTests(TestCase):
     def test_list_view_htmx_vs_standard(self) -> None:
         """Garante que a visualização de lista retorna o template correto com e sem HTMX."""
         self.client.login(username=self.username, password=self.password)
-        
+
         # Requisição padrão
         response = self.client.get(reverse("tasks:list"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "tasks/task_list_page.html")
-        
+
         # Requisição HTMX
         response = self.client.get(reverse("tasks:list"), HTTP_HX_REQUEST="true")
         self.assertEqual(response.status_code, 200)
@@ -260,79 +260,103 @@ class TaskViewTests(TestCase):
     def test_list_view_search_filtering(self) -> None:
         """Garante que a busca textual filtra os objetivos de forma correta."""
         self.client.login(username=self.username, password=self.password)
-        
+
         # Cria tarefa específica
         match_task = Task.objects.create(user=self.user, title="Comprar Abacaxi")
-        
-        response = self.client.get(reverse("tasks:list"), {"q": "Abacaxi"}, HTTP_HX_REQUEST="true")
+
+        response = self.client.get(
+            reverse("tasks:list"), {"q": "Abacaxi"}, HTTP_HX_REQUEST="true"
+        )
         self.assertIn(match_task, response.context["page_obj"])
         self.assertNotIn(self.task, response.context["page_obj"])
 
     def test_list_view_status_filtering(self) -> None:
         """Garante que o filtro de status (pendente vs concluído) retorna os itens corretos."""
         self.client.login(username=self.username, password=self.password)
-        
-        completed_task = Task.objects.create(user=self.user, title="Concluída", is_completed=True)
-        
+
+        completed_task = Task.objects.create(
+            user=self.user, title="Concluída", is_completed=True
+        )
+
         # Filtro de concluídos
-        response = self.client.get(reverse("tasks:list"), {"status": "completed"}, HTTP_HX_REQUEST="true")
+        response = self.client.get(
+            reverse("tasks:list"), {"status": "completed"}, HTTP_HX_REQUEST="true"
+        )
         self.assertIn(completed_task, response.context["page_obj"])
         self.assertNotIn(self.task, response.context["page_obj"])
-        
+
         # Filtro de pendentes
-        response = self.client.get(reverse("tasks:list"), {"status": "pending"}, HTTP_HX_REQUEST="true")
+        response = self.client.get(
+            reverse("tasks:list"), {"status": "pending"}, HTTP_HX_REQUEST="true"
+        )
         self.assertIn(self.task, response.context["page_obj"])
         self.assertNotIn(completed_task, response.context["page_obj"])
 
     def test_list_view_pagination(self) -> None:
         """Garante que a paginação exibe a quantidade configurada e preserva query params."""
         self.client.login(username=self.username, password=self.password)
-        
+
         # Cria mais 10 tarefas (total 11)
         for i in range(10):
             Task.objects.create(user=self.user, title=f"Tarefa {i}")
-            
+
         # Página 1 deve ter 5 tarefas (paginação definida para 5 por página)
         response = self.client.get(reverse("tasks:list"), HTTP_HX_REQUEST="true")
         self.assertEqual(len(response.context["page_obj"]), 5)
-        
+
         # Página 3 deve ter o restante (1 item)
-        response = self.client.get(reverse("tasks:list"), {"page": 3}, HTTP_HX_REQUEST="true")
+        response = self.client.get(
+            reverse("tasks:list"), {"page": 3}, HTTP_HX_REQUEST="true"
+        )
         self.assertEqual(len(response.context["page_obj"]), 1)
 
     def test_create_view_success(self) -> None:
         """Garante que a criação cria a tarefa no banco e envia o trigger htmx."""
         self.client.login(username=self.username, password=self.password)
-        
-        payload = {"title": "Aprender Django", "description": "Muito divertido", "xp_reward": 30}
-        response = self.client.post(reverse("tasks:create"), payload, HTTP_HX_REQUEST="true")
-        
+
+        payload = {
+            "title": "Aprender Django",
+            "description": "Muito divertido",
+            "xp_reward": 30,
+        }
+        response = self.client.post(
+            reverse("tasks:create"), payload, HTTP_HX_REQUEST="true"
+        )
+
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(Task.objects.filter(title="Aprender Django", user=self.user).exists())
+        self.assertTrue(
+            Task.objects.filter(title="Aprender Django", user=self.user).exists()
+        )
         self.assertEqual(response["HX-Trigger"], "task-updated")
 
     def test_toggle_view_not_owned_returns_404(self) -> None:
         """Garante que tentar alternar o status de uma tarefa que não pertence ao usuário retorna 404 (RLS)."""
         self.client.login(username=self.username, password=self.password)
-        
+
         other_task = Task.objects.create(user=self.other_user, title="De outro user")
-        
-        response = self.client.post(reverse("tasks:toggle", kwargs={"pk": other_task.pk}))
+
+        response = self.client.post(
+            reverse("tasks:toggle", kwargs={"pk": other_task.pk})
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_toggle_view_success_and_trigger(self) -> None:
         """Garante que alternar o status ativa o serviço e emite o trigger de atualização de stats."""
         self.client.login(username=self.username, password=self.password)
-        
+
         self.assertFalse(self.task.is_completed)
-        response = self.client.post(reverse("tasks:toggle", kwargs={"pk": self.task.pk}), HTTP_HX_REQUEST="true")
-        
+        response = self.client.post(
+            reverse("tasks:toggle", kwargs={"pk": self.task.pk}), HTTP_HX_REQUEST="true"
+        )
+
         self.task.refresh_from_db()
         self.assertTrue(self.task.is_completed)
         self.assertEqual(response["HX-Trigger"], "task-updated")
-        
+
         # Reabre
-        response = self.client.post(reverse("tasks:toggle", kwargs={"pk": self.task.pk}), HTTP_HX_REQUEST="true")
+        response = self.client.post(
+            reverse("tasks:toggle", kwargs={"pk": self.task.pk}), HTTP_HX_REQUEST="true"
+        )
         self.task.refresh_from_db()
         self.assertFalse(self.task.is_completed)
         self.assertEqual(response["HX-Trigger"], "task-updated")
@@ -340,10 +364,18 @@ class TaskViewTests(TestCase):
     def test_edit_view_success(self) -> None:
         """Garante que a rota de edição altera os dados no banco e atualiza os stats."""
         self.client.login(username=self.username, password=self.password)
-        
-        payload = {"title": "Novo Título", "xp_reward": 50, "description": "Nova descrição"}
-        response = self.client.post(reverse("tasks:edit", kwargs={"pk": self.task.pk}), payload, HTTP_HX_REQUEST="true")
-        
+
+        payload = {
+            "title": "Novo Título",
+            "xp_reward": 50,
+            "description": "Nova descrição",
+        }
+        response = self.client.post(
+            reverse("tasks:edit", kwargs={"pk": self.task.pk}),
+            payload,
+            HTTP_HX_REQUEST="true",
+        )
+
         self.assertEqual(response.status_code, 200)
         self.task.refresh_from_db()
         self.assertEqual(self.task.title, "Novo Título")
@@ -353,27 +385,29 @@ class TaskViewTests(TestCase):
     def test_delete_view_success_and_deducts_xp(self) -> None:
         """Garante que a rota de deleção apaga a tarefa, remove XP se ela estava concluída e emite trigger."""
         self.client.login(username=self.username, password=self.password)
-        
+
         # 1. Deletar tarefa pendente (não afeta XP)
         self.assertEqual(self.user.experience_points, 0)
-        response = self.client.post(reverse("tasks:delete", kwargs={"pk": self.task.pk}), HTTP_HX_REQUEST="true")
+        response = self.client.post(
+            reverse("tasks:delete", kwargs={"pk": self.task.pk}), HTTP_HX_REQUEST="true"
+        )
         self.assertEqual(response.status_code, 200)
-        
+
         # Verifica se a tarefa sumiu da busca padrão (está inativa)
         self.assertFalse(Task.objects.filter(pk=self.task.pk).exists())
         # Mas continua existindo logicamente como excluída no banco
         soft_deleted_task = Task.objects.all_with_deleted().get(pk=self.task.pk)
         self.assertTrue(soft_deleted_task.is_deleted)
         self.assertIsNotNone(soft_deleted_task.deleted_at)
-        
+
         self.assertEqual(response["HX-Trigger"], "task-updated")
         self.user.refresh_from_db()
         self.assertEqual(self.user.experience_points, 0)
-        
+
         # 2. Deletar tarefa concluída (deduz XP)
         self.user.experience_points = 50
         self.user.save()
-        
+
         completed_task = Task.objects.create(
             user=self.user,
             title="Concluída",
@@ -381,32 +415,36 @@ class TaskViewTests(TestCase):
             is_completed=True,
             completed_at=timezone.now(),
         )
-        
-        response = self.client.post(reverse("tasks:delete", kwargs={"pk": completed_task.pk}), HTTP_HX_REQUEST="true")
+
+        response = self.client.post(
+            reverse("tasks:delete", kwargs={"pk": completed_task.pk}),
+            HTTP_HX_REQUEST="true",
+        )
         self.assertEqual(response.status_code, 200)
-        
+
         # Verifica se sumiu da busca padrão
         self.assertFalse(Task.objects.filter(pk=completed_task.pk).exists())
         # Mas continua existindo como excluída no banco
-        soft_deleted_completed = Task.objects.all_with_deleted().get(pk=completed_task.pk)
+        soft_deleted_completed = Task.objects.all_with_deleted().get(
+            pk=completed_task.pk
+        )
         self.assertTrue(soft_deleted_completed.is_deleted)
         self.assertIsNotNone(soft_deleted_completed.deleted_at)
-        
+
         self.assertEqual(response["HX-Trigger"], "task-updated")
-        
+
         self.user.refresh_from_db()
         # XP deve cair de 50 para 30
         self.assertEqual(self.user.experience_points, 30)
 
-
     def test_stats_partial_view_response(self) -> None:
         """Garante que a stats view do accounts renderiza os valores atuais do usuário."""
         self.client.login(username=self.username, password=self.password)
-        
+
         self.user.experience_points = 75
         self.user.level = 4
         self.user.save()
-        
+
         response = self.client.get(reverse("stats"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "75 XP")
@@ -450,7 +488,7 @@ class TaskAdminTests(TestCase):
         self.assertLessEqual(
             queries_with_many - queries_with_one,
             1,
-            f"N+1 detectado: queries com 1 task = {queries_with_one}, com 11 tasks = {queries_with_many}"
+            f"N+1 detectado: queries com 1 task = {queries_with_one}, com 11 tasks = {queries_with_many}",
         )
 
 
@@ -465,30 +503,28 @@ class TaskSoftDeleteTests(TestCase):
     def test_model_delete_performs_soft_delete(self) -> None:
         """Garante que deletar a model via task.delete() marca a tarefa como excluída no banco."""
         self.task1.delete()
-        
+
         # Não deve ser encontrada no manager padrão
         self.assertFalse(Task.objects.filter(pk=self.task1.pk).exists())
-        
+
         # Deve ser encontrada com all_with_deleted
         task = Task.objects.all_with_deleted().get(pk=self.task1.pk)
         self.assertTrue(task.is_deleted)
         self.assertIsNotNone(task.deleted_at)
-        
+
         # A outra tarefa deve continuar ativa
         self.assertTrue(Task.objects.filter(pk=self.task2.pk).exists())
 
     def test_queryset_delete_performs_soft_delete(self) -> None:
         """Garante que a deleção em lote no QuerySet marca as tarefas como excluídas."""
         Task.objects.all().delete()
-        
+
         # Nenhuma tarefa deve estar ativa no manager padrão
         self.assertEqual(Task.objects.count(), 0)
-        
+
         # Ambas devem estar excluídas logicamente
         all_tasks = Task.objects.all_with_deleted()
         self.assertEqual(all_tasks.count(), 2)
         for task in all_tasks:
             self.assertTrue(task.is_deleted)
             self.assertIsNotNone(task.deleted_at)
-
-

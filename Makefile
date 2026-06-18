@@ -1,4 +1,4 @@
-.PHONY: help setup run migrate lint format check clean
+.PHONY: help setup run migrate lint format check clean test
 
 help:
 	@echo "Comandos disponiveis:"
@@ -7,13 +7,14 @@ help:
 	@echo "  make migrate    - Aplica as migracoes do banco de dados"
 	@echo "  make lint       - Executa o linter (ruff check)"
 	@echo "  make format     - Formata o codigo (ruff format)"
+	@echo "  make test       - Executa a suite de testes com pytest"
 	@echo "  make check      - Valida lint e formatacao (usado no CI)"
 
 setup:
 	uv run python setup.py
 
 run:
-	uv run python manage.py runserver
+	uv run python manage.py runserver 127.0.0.1:8000 || uv run python manage.py runserver 127.0.0.1:8080
 
 migrate:
 	uv run python manage.py migrate
@@ -24,5 +25,8 @@ lint:
 format:
 	uv run ruff format .
 
+test:
+	uv run pytest
+
 check: lint
-	uv run ruff format --check .
+	uv run ruff format --check .

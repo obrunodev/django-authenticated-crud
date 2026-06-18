@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from tasks.models import Task
 
 
@@ -21,5 +22,3 @@ class TaskAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return Task.objects.all_with_deleted()
-
-

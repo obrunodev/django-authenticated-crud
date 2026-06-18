@@ -66,4 +66,3 @@ def dashboard_view(request: HttpRequest) -> HttpResponse:
 def stats_view(request: HttpRequest) -> HttpResponse:
     """Retorna o fragmento HTML contendo as estatísticas de gamificação do usuário."""
     return render(request, "accounts/partials/stats.html")
-

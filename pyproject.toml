@@ -43,6 +43,7 @@ select = [
 ]
 ignore = [
     "E501",
+    "RUF012",
 ]
 
 [tool.ruff.lint.isort]
