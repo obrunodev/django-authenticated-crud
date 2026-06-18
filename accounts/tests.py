@@ -141,6 +141,43 @@ class AuthTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
+    @override_settings(LOGIN_RATELIMIT_LIMIT=3)
+    def test_login_rate_limiting_with_x_forwarded_for(self) -> None:
+        """Garante que o rate limit funciona usando o cabeçalho HTTP_X_FORWARDED_FOR."""
+        for _ in range(3):
+            response = self.client.post(
+                reverse("login"),
+                {"username": self.username, "password": "wrongpassword"},
+                HTTP_X_FORWARDED_FOR="192.168.1.1, 10.0.0.1",
+            )
+            self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": self.username, "password": "wrongpassword"},
+            HTTP_X_FORWARDED_FOR="192.168.1.1, 10.0.0.1",
+        )
+        self.assertEqual(response.status_code, 429)
+
+    def test_authenticated_user_cannot_access_login(self) -> None:
+        """Garante que usuário já logado é redirecionado ao tentar acessar tela de login."""
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(reverse("login"))
+        self.assertRedirects(response, reverse("dashboard"))
+
+    def test_authenticated_user_cannot_access_register(self) -> None:
+        """Garante que usuário já logado é redirecionado ao tentar acessar tela de registro."""
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(reverse("register"))
+        self.assertRedirects(response, reverse("dashboard"))
+
+    def test_anonymous_user_can_get_register(self) -> None:
+        """Garante que usuário anônimo consegue abrir o formulário de registro."""
+        response = self.client.get(reverse("register"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/register.html")
+
+
 
 class RowLevelSecurityTests(TestCase):
     def setUp(self) -> None:
@@ -207,10 +244,45 @@ class RowLevelSecurityTests(TestCase):
 
         @owner_required(mock_model)
         def dummy_view(request, obj):
-            return "success"
+            return "success"  # pragma: no cover
 
         request = MagicMock()
         request.user = self.user
 
         with self.assertRaises(Http404):
             dummy_view(request, pk=42)
+
+    def test_owner_required_decorator_positional_arg(self) -> None:
+        """Garante que o decorator owner_required funciona quando o ID é passado como argumento posicional."""
+        mock_model = MagicMock()
+        mock_obj = MagicMock()
+        mock_model.objects.get.return_value = mock_obj
+
+        @owner_required(mock_model)
+        def dummy_view(request, obj):
+            return ("success", obj)
+
+        request = MagicMock()
+        request.user = self.user
+
+        # Passa 42 como argumento posicional (args) em vez de kwarg (pk=42)
+        status, obj = dummy_view(request, 42)
+        self.assertEqual(status, "success")
+        self.assertEqual(obj, mock_obj)
+        mock_model.objects.get.assert_called_once_with(pk=42, user=self.user)
+
+    def test_owner_required_decorator_missing_id(self) -> None:
+        """Garante que o decorator owner_required levanta Http404 se nenhum ID for fornecido nos argumentos."""
+        mock_model = MagicMock()
+
+        @owner_required(mock_model)
+        def dummy_view(request, obj):
+            return "success"  # pragma: no cover
+
+        request = MagicMock()
+        request.user = self.user
+
+        with self.assertRaises(Http404) as context:
+            dummy_view(request)
+        self.assertEqual(str(context.exception), "ID do objeto não fornecido.")
+

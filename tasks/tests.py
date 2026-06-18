@@ -108,6 +108,37 @@ class TaskModelTests(TestCase):
         task.title = "Título Alterado"
         task.save()
 
+    def test_task_edit_past_due_date_fails_validation(self) -> None:
+        """Garante que alterar o prazo de uma tarefa existente para o passado falha na validação."""
+        tomorrow = timezone.localdate() + timezone.timedelta(days=1)
+        task = Task.objects.create(
+            user=self.user_a,
+            title="Tarefa",
+            due_date=tomorrow,
+        )
+
+        # Tenta alterar a data limite para o passado
+        yesterday = timezone.localdate() - timezone.timedelta(days=1)
+        task.due_date = yesterday
+        with self.assertRaises(ValidationError):
+            task.full_clean()
+
+    def test_task_due_status(self) -> None:
+        """Garante que a propriedade due_status funciona corretamente."""
+        task = Task(user=self.user_a, title="Sem Prazo")
+        self.assertEqual(task.due_status, "none")
+
+        today = timezone.localdate()
+        task.due_date = today - timezone.timedelta(days=1)
+        self.assertEqual(task.due_status, "overdue")
+
+        task.due_date = today
+        self.assertEqual(task.due_status, "today")
+
+        task.due_date = today + timezone.timedelta(days=1)
+        self.assertEqual(task.due_status, "future")
+
+
 
 class TaskServiceTests(TestCase):
     def setUp(self) -> None:
@@ -252,6 +283,18 @@ class TaskServiceTests(TestCase):
         self.assertEqual(self.user.level, 1)
         self.assertEqual(self.user.experience_points, 0)  # Capped at 0
 
+    def test_reopen_active_task_does_nothing(self) -> None:
+        """Garante que tentar reabrir uma tarefa que não está concluída não faz nada."""
+        task = Task.objects.create(
+            user=self.user,
+            title="Tarefa Ativa",
+            is_completed=False,
+        )
+        self.assertFalse(task.is_completed)
+        reopen_task(task)
+        self.assertFalse(task.is_completed)
+
+
 
 class TaskViewTests(TestCase):
     def setUp(self) -> None:
@@ -394,6 +437,60 @@ class TaskViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    def test_edit_view_get_not_owned_returns_404(self) -> None:
+        """Garante que tentar obter o formulário de edição de uma tarefa que não pertence ao usuário retorna 404."""
+        self.client.login(username=self.username, password=self.password)
+        other_task = Task.objects.create(user=self.other_user, title="Tarefa Alheia")
+        response = self.client.get(reverse("tasks:edit", kwargs={"pk": other_task.pk}))
+        self.assertEqual(response.status_code, 404)
+
+    def test_edit_view_post_not_owned_returns_404(self) -> None:
+        """Garante que tentar atualizar uma tarefa que não pertence ao usuário retorna 404."""
+        self.client.login(username=self.username, password=self.password)
+        other_task = Task.objects.create(user=self.other_user, title="Tarefa Alheia")
+        payload = {
+            "title": "Hackeada",
+            "xp_reward": 50,
+            "description": "Tentativa de injeção",
+        }
+        response = self.client.post(
+            reverse("tasks:edit", kwargs={"pk": other_task.pk}),
+            payload,
+            HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_detail_view_not_owned_returns_404(self) -> None:
+        """Garante que tentar visualizar os detalhes de uma tarefa que não pertence ao usuário retorna 404."""
+        self.client.login(username=self.username, password=self.password)
+        other_task = Task.objects.create(user=self.other_user, title="Tarefa Alheia")
+        response = self.client.get(reverse("tasks:detail", kwargs={"pk": other_task.pk}))
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_view_not_owned_returns_404(self) -> None:
+        """Garante que tentar deletar uma tarefa que não pertence ao usuário retorna 404."""
+        self.client.login(username=self.username, password=self.password)
+        other_task = Task.objects.create(user=self.other_user, title="Tarefa Alheia")
+        response = self.client.post(reverse("tasks:delete", kwargs={"pk": other_task.pk}))
+        self.assertEqual(response.status_code, 404)
+
+    def test_list_view_does_not_leak_other_user_tasks(self) -> None:
+        """Garante que a listagem de tarefas não vaza registros de outros usuários."""
+        self.client.login(username=self.username, password=self.password)
+        other_task = Task.objects.create(user=self.other_user, title="Tarefa Confidencial de B")
+
+        # Requisição padrão
+        response = self.client.get(reverse("tasks:list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(other_task, response.context["page_obj"])
+        self.assertNotContains(response, "Tarefa Confidencial de B")
+
+        # Requisição HTMX
+        response = self.client.get(reverse("tasks:list"), HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(other_task, response.context["page_obj"])
+        self.assertNotContains(response, "Tarefa Confidencial de B")
+
     def test_toggle_view_success_and_trigger(self) -> None:
         """Garante que alternar o status ativa o serviço e emite o trigger de atualização de stats."""
         self.client.login(username=self.username, password=self.password)
@@ -503,6 +600,64 @@ class TaskViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "75 XP")
         self.assertContains(response, "4")
+
+    def test_list_view_status_all(self) -> None:
+        """Garante que a visualização de lista com status 'all' funciona e retorna ordenação correta."""
+        self.client.login(username=self.username, password=self.password)
+        completed_task = Task.objects.create(
+            user=self.user, title="Concluída", is_completed=True, completed_at=timezone.now()
+        )
+        # Solicita listagem com status 'all'
+        response = self.client.get(
+            reverse("tasks:list"), {"status": "all"}, HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.task, response.context["page_obj"])
+        self.assertIn(completed_task, response.context["page_obj"])
+
+    def test_create_view_invalid_form(self) -> None:
+        """Garante que enviar um formulário de criação inválido retorna o formulário com erros."""
+        self.client.login(username=self.username, password=self.password)
+        # Título em branco é inválido
+        payload = {
+            "title": "   ",
+            "description": "Incorreta",
+            "xp_reward": 10,
+        }
+        response = self.client.post(
+            reverse("tasks:create"), payload, HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/partials/task_list.html")
+        # Deve retornar o formulário na resposta contendo erros
+        self.assertFalse(response.context["form"].is_valid())
+
+    def test_edit_view_invalid_form(self) -> None:
+        """Garante que enviar um formulário de edição inválido retorna a view de edição com erros."""
+        self.client.login(username=self.username, password=self.password)
+        # Título em branco é inválido
+        payload = {
+            "title": "   ",
+            "description": "Editada",
+            "xp_reward": 10,
+        }
+        response = self.client.post(
+            reverse("tasks:edit", kwargs={"pk": self.task.pk}),
+            payload,
+            HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/partials/task_edit.html")
+        self.assertFalse(response.context["form"].is_valid())
+
+    def test_detail_view_success(self) -> None:
+        """Garante que obter detalhes da tarefa retorna o template parcial de linha correspondente."""
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(reverse("tasks:detail", kwargs={"pk": self.task.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/partials/task_row.html")
+        self.assertContains(response, self.task.title)
+
 
 
 class TaskAdminTests(TestCase):

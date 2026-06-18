@@ -30,7 +30,7 @@ format:
 	uv run ruff format .
 
 test:
-	uv run pytest
+	uv run pytest --cov=accounts --cov=tasks --cov-report=term-missing
 
 check: lint
 	uv run ruff format --check .
