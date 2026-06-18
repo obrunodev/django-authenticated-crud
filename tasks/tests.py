@@ -582,3 +582,113 @@ class TaskSoftDeleteTests(TestCase):
         for task in all_tasks:
             self.assertTrue(task.is_deleted)
             self.assertIsNotNone(task.deleted_at)
+
+
+class TaskCRUDIntegrationTests(TestCase):
+    def setUp(self) -> None:
+        self.username = "cruduser"
+        self.password = "SecurePassword123"
+        self.user = User.objects.create_user(
+            username=self.username,
+            email="cruduser@example.com",
+            password=self.password,
+        )
+        self.client.login(username=self.username, password=self.password)
+
+    def test_full_crud_lifecycle(self) -> None:
+        """Testa o fluxo completo do CRUD (Create, Read, Update, Delete) de uma tarefa."""
+
+        # 1. CREATE
+        create_url = reverse("tasks:create")
+        payload = {
+            "title": "Tarefa de Integração",
+            "description": "Uma tarefa criada durante o teste de integração",
+            "xp_reward": 50,
+            "due_date": (timezone.localdate() + timezone.timedelta(days=2)).strftime("%Y-%m-%d"),
+        }
+
+        # O formulário de criação retorna o template parcial tasks/partials/task_list.html sob HTMX
+        response = self.client.post(create_url, payload, HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/partials/task_list.html")
+        self.assertEqual(response["HX-Trigger"], "task-updated")
+
+        # Verifica se o objeto foi criado no banco
+        task = Task.objects.filter(title="Tarefa de Integração", user=self.user).first()
+        self.assertIsNotNone(task)
+        self.assertEqual(task.description, "Uma tarefa criada durante o teste de integração")
+        self.assertEqual(task.xp_reward, 50)
+
+        # Verifica se o título da tarefa aparece no HTML renderizado
+        self.assertContains(response, "Tarefa de Integração")
+
+        # 2. READ
+        list_url = reverse("tasks:list")
+
+        # Requisição normal (não-HTMX) para listagem
+        response = self.client.get(list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/task_list_page.html")
+        self.assertIn(task, response.context["page_obj"])
+        self.assertContains(response, "Tarefa de Integração")
+
+        # Requisição HTMX para listagem com busca (q="Integração")
+        response = self.client.get(list_url, {"q": "Integração"}, HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/partials/task_list.html")
+        self.assertIn(task, response.context["page_obj"])
+        self.assertContains(response, "Tarefa de Integração")
+
+        # Busca por algo que não existe
+        response = self.client.get(list_url, {"q": "Inexistente"}, HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(task, response.context["page_obj"])
+        self.assertNotContains(response, "Tarefa de Integração")
+
+        # 3. UPDATE
+        edit_url = reverse("tasks:edit", kwargs={"pk": task.pk})
+
+        # GET na view de edição deve retornar o template do formulário inline
+        response = self.client.get(edit_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/partials/task_edit.html")
+
+        # POST para atualizar os dados da tarefa
+        update_payload = {
+            "title": "Tarefa de Integração Atualizada",
+            "description": "Descrição atualizada no teste de integração",
+            "xp_reward": 75,
+            "due_date": (timezone.localdate() + timezone.timedelta(days=3)).strftime("%Y-%m-%d"),
+        }
+        response = self.client.post(edit_url, update_payload, HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/partials/task_row.html")
+        self.assertEqual(response["HX-Trigger"], "task-updated")
+
+        # Valida alteração no banco de dados
+        task.refresh_from_db()
+        self.assertEqual(task.title, "Tarefa de Integração Atualizada")
+        self.assertEqual(task.description, "Descrição atualizada no teste de integração")
+        self.assertEqual(task.xp_reward, 75)
+
+        # Valida retorno no HTML do fragmento da linha
+        self.assertContains(response, "Tarefa de Integração Atualizada")
+        self.assertContains(response, "75 XP")
+
+        # 4. DELETE
+        delete_url = reverse("tasks:delete", kwargs={"pk": task.pk})
+
+        response = self.client.post(delete_url, HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "tasks/partials/task_list.html")
+        self.assertEqual(response["HX-Trigger"], "task-updated")
+
+        # Verifica soft delete no banco
+        self.assertFalse(Task.objects.filter(pk=task.pk).exists())
+        soft_deleted_task = Task.objects.all_with_deleted().get(pk=task.pk)
+        self.assertTrue(soft_deleted_task.is_deleted)
+        self.assertIsNotNone(soft_deleted_task.deleted_at)
+
+        # Verifica se o item não aparece mais na listagem retornada
+        self.assertNotContains(response, "Tarefa de Integração Atualizada")
+
