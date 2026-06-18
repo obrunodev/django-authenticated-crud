@@ -33,4 +33,4 @@ test:
 	uv run pytest --cov=accounts --cov=tasks --cov-report=term-missing
 
 check: lint
-	uv run ruff format --check .
+	uv run ruff format --check .

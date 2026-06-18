@@ -178,7 +178,6 @@ class AuthTests(TestCase):
         self.assertTemplateUsed(response, "accounts/register.html")
 
 
-
 class RowLevelSecurityTests(TestCase):
     def setUp(self) -> None:
         self.username = "testuser"
@@ -285,4 +284,3 @@ class RowLevelSecurityTests(TestCase):
         with self.assertRaises(Http404) as context:
             dummy_view(request)
         self.assertEqual(str(context.exception), "ID do objeto não fornecido.")
-
