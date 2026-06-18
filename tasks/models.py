@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -56,6 +57,11 @@ class Task(OwnedModel):
         blank=True,
         verbose_name="excluída em",
     )
+    due_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="prazo",
+    )
 
     objects = TaskManager()
 
@@ -66,6 +72,43 @@ class Task(OwnedModel):
 
     def __str__(self) -> str:
         return self.title
+
+    def clean(self) -> None:
+        super().clean()
+        if self.title and not self.title.strip():
+            raise ValidationError(
+                {"title": "O título não pode ser vazio ou conter apenas espaços."}
+            )
+
+        if self.pk:
+            old_task = Task.objects.all_with_deleted().filter(pk=self.pk).first()
+            if old_task and self.due_date != old_task.due_date:
+                if self.due_date and self.due_date < timezone.localdate():
+                    raise ValidationError(
+                        {"due_date": "O prazo não pode ser uma data no passado."}
+                    )
+        else:
+            if self.due_date and self.due_date < timezone.localdate():
+                raise ValidationError(
+                    {"due_date": "O prazo não pode ser uma data no passado."}
+                )
+
+    def save(self, *args, **kwargs) -> None:
+        self.clean()
+        super().save(*args, **kwargs)
+
+    @property
+    def due_status(self) -> str:
+        """Retorna o status do prazo: 'overdue', 'today', 'future' ou 'none'."""
+        if not self.due_date:
+            return "none"
+        today = timezone.localdate()
+        if self.due_date < today:
+            return "overdue"
+        elif self.due_date == today:
+            return "today"
+        else:
+            return "future"
 
     def delete(self, using=None, keep_parents=False):
         self.is_deleted = True

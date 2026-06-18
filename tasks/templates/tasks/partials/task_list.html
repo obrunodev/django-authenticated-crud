@@ -81,11 +81,19 @@
             </div>
         </div>
         
-        <div>
-            {{ form.description }}
-            {% if form.description.errors %}
-                <p class="text-red-500 text-[10px] mt-1">{{ form.description.errors.0 }}</p>
-            {% endif %}
+        <div class="flex flex-col sm:flex-row gap-2">
+            <div class="flex-1">
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <p class="text-red-500 text-[10px] mt-1">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div class="sm:w-48 shrink-0">
+                {{ form.due_date }}
+                {% if form.due_date.errors %}
+                    <p class="text-red-500 text-[10px] mt-1">{{ form.due_date.errors.0 }}</p>
+                {% endif %}
+            </div>
         </div>
 
         <button type="submit" class="bg-indigo-500 hover:bg-indigo-400 active:scale-[0.98] text-slate-950 font-bold rounded-xl py-2.5 text-xs tracking-wider uppercase transition-all cursor-pointer shadow-lg shadow-indigo-600/10">

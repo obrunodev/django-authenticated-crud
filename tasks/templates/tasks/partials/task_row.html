@@ -28,6 +28,40 @@
                 {{ task.description }}
             </p>
         {% endif %}
+        
+        {% if task.due_date %}
+            <div class="flex items-center gap-2 mt-1.5">
+                {% if task.is_completed %}
+                    <span class="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-500 bg-slate-950/40 px-2 py-0.5 rounded-md border border-slate-900/60">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-2.5 h-2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        </svg>
+                        Prazo: {{ task.due_date|date:"d/m/Y" }}
+                    </span>
+                {% elif task.due_status == 'overdue' %}
+                    <span class="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase text-red-400 bg-red-950/20 border border-red-500/20 px-2 py-0.5 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-2.5 h-2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                        Atrasada • {{ task.due_date|date:"d/m/Y" }}
+                    </span>
+                {% elif task.due_status == 'today' %}
+                    <span class="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase text-amber-400 bg-amber-950/20 border border-amber-500/20 px-2 py-0.5 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-2.5 h-2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        Hoje • {{ task.due_date|date:"d/m/Y" }}
+                    </span>
+                {% else %}
+                    <span class="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-400 bg-slate-950/40 px-2 py-0.5 rounded-md border border-slate-900/60">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-2.5 h-2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        </svg>
+                        Prazo: {{ task.due_date|date:"d/m/Y" }}
+                    </span>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 
     <!-- Ações (Editar / Excluir) -->

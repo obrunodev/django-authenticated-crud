@@ -25,13 +25,22 @@
             </div>
         </div>
 
-        <!-- Descrição -->
-        <div>
-            <textarea name="description" rows="2"
-                      class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full h-16 resize-none transition-all">{{ form.description.value|default:'' }}</textarea>
-            {% if form.description.errors %}
-                <p class="text-red-500 text-[10px] mt-1">{{ form.description.errors.0 }}</p>
-            {% endif %}
+        <!-- Descrição e Prazo -->
+        <div class="flex flex-col sm:flex-row gap-2">
+            <div class="flex-1">
+                <textarea name="description" rows="2"
+                          class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full h-16 resize-none transition-all">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}
+                    <p class="text-red-500 text-[10px] mt-1">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div class="sm:w-48 shrink-0">
+                <input type="date" name="due_date" value="{{ form.due_date.value|date:'Y-m-d' }}"
+                       class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full transition-all">
+                {% if form.due_date.errors %}
+                    <p class="text-red-500 text-[10px] mt-1">{{ form.due_date.errors.0 }}</p>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Botões de Ação -->

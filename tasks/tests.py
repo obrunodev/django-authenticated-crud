@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -53,6 +54,59 @@ class TaskModelTests(TestCase):
         qs_b = Task.objects.for_user(self.user_b)
         self.assertIn(task_b, qs_b)
         self.assertNotIn(task_a, qs_b)
+
+    def test_task_cannot_have_empty_whitespace_title(self) -> None:
+        """Garante que a criação de uma tarefa com título apenas de espaços falha na validação."""
+        task = Task(
+            user=self.user_a,
+            title="   ",
+            description="Teste espaço",
+        )
+        with self.assertRaises(ValidationError):
+            task.full_clean()
+
+    def test_task_cannot_have_past_due_date_on_creation(self) -> None:
+        """Garante que a criação de uma tarefa com prazo no passado falha na validação."""
+        yesterday = timezone.localdate() - timezone.timedelta(days=1)
+        task = Task(
+            user=self.user_a,
+            title="Tarefa Atrasada",
+            due_date=yesterday,
+        )
+        with self.assertRaises(ValidationError):
+            task.full_clean()
+
+    def test_task_can_have_future_due_date_on_creation(self) -> None:
+        """Garante que a criação de uma tarefa com prazo no futuro passa na validação."""
+        tomorrow = timezone.localdate() + timezone.timedelta(days=1)
+        task = Task(
+            user=self.user_a,
+            title="Tarefa Futura",
+            due_date=tomorrow,
+        )
+        # Não deve lançar erro
+        task.full_clean()
+        task.save()
+        self.assertEqual(task.due_date, tomorrow)
+
+    def test_task_allow_editing_without_changing_expired_due_date(self) -> None:
+        """Garante que uma tarefa já salva não falha ao ser editada sem alterar o prazo expirado."""
+        # Criamos com data futura
+        tomorrow = timezone.localdate() + timezone.timedelta(days=1)
+        task = Task.objects.create(
+            user=self.user_a,
+            title="Tarefa Futura",
+            due_date=tomorrow,
+        )
+
+        # Agora simulamos que o tempo passou e a data ficou no passado no banco
+        yesterday = timezone.localdate() - timezone.timedelta(days=1)
+        Task.objects.filter(pk=task.pk).update(due_date=yesterday)
+
+        task.refresh_from_db()
+        # Ao salvar editando apenas o título (sem mexer na data), não deve explodir erro
+        task.title = "Título Alterado"
+        task.save()
 
 
 class TaskServiceTests(TestCase):
