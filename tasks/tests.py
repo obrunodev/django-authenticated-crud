@@ -139,7 +139,6 @@ class TaskModelTests(TestCase):
         self.assertEqual(task.due_status, "future")
 
 
-
 class TaskServiceTests(TestCase):
     def setUp(self) -> None:
         self.user = User.objects.create_user(
@@ -293,7 +292,6 @@ class TaskServiceTests(TestCase):
         self.assertFalse(task.is_completed)
         reopen_task(task)
         self.assertFalse(task.is_completed)
-
 
 
 class TaskViewTests(TestCase):
@@ -456,7 +454,7 @@ class TaskViewTests(TestCase):
         response = self.client.post(
             reverse("tasks:edit", kwargs={"pk": other_task.pk}),
             payload,
-            HTTP_HX_REQUEST="true"
+            HTTP_HX_REQUEST="true",
         )
         self.assertEqual(response.status_code, 404)
 
@@ -464,20 +462,26 @@ class TaskViewTests(TestCase):
         """Garante que tentar visualizar os detalhes de uma tarefa que não pertence ao usuário retorna 404."""
         self.client.login(username=self.username, password=self.password)
         other_task = Task.objects.create(user=self.other_user, title="Tarefa Alheia")
-        response = self.client.get(reverse("tasks:detail", kwargs={"pk": other_task.pk}))
+        response = self.client.get(
+            reverse("tasks:detail", kwargs={"pk": other_task.pk})
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_delete_view_not_owned_returns_404(self) -> None:
         """Garante que tentar deletar uma tarefa que não pertence ao usuário retorna 404."""
         self.client.login(username=self.username, password=self.password)
         other_task = Task.objects.create(user=self.other_user, title="Tarefa Alheia")
-        response = self.client.post(reverse("tasks:delete", kwargs={"pk": other_task.pk}))
+        response = self.client.post(
+            reverse("tasks:delete", kwargs={"pk": other_task.pk})
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_list_view_does_not_leak_other_user_tasks(self) -> None:
         """Garante que a listagem de tarefas não vaza registros de outros usuários."""
         self.client.login(username=self.username, password=self.password)
-        other_task = Task.objects.create(user=self.other_user, title="Tarefa Confidencial de B")
+        other_task = Task.objects.create(
+            user=self.other_user, title="Tarefa Confidencial de B"
+        )
 
         # Requisição padrão
         response = self.client.get(reverse("tasks:list"))
@@ -605,7 +609,10 @@ class TaskViewTests(TestCase):
         """Garante que a visualização de lista com status 'all' funciona e retorna ordenação correta."""
         self.client.login(username=self.username, password=self.password)
         completed_task = Task.objects.create(
-            user=self.user, title="Concluída", is_completed=True, completed_at=timezone.now()
+            user=self.user,
+            title="Concluída",
+            is_completed=True,
+            completed_at=timezone.now(),
         )
         # Solicita listagem com status 'all'
         response = self.client.get(
@@ -644,7 +651,7 @@ class TaskViewTests(TestCase):
         response = self.client.post(
             reverse("tasks:edit", kwargs={"pk": self.task.pk}),
             payload,
-            HTTP_HX_REQUEST="true"
+            HTTP_HX_REQUEST="true",
         )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "tasks/partials/task_edit.html")
@@ -657,7 +664,6 @@ class TaskViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "tasks/partials/task_row.html")
         self.assertContains(response, self.task.title)
-
 
 
 class TaskAdminTests(TestCase):
@@ -759,7 +765,9 @@ class TaskCRUDIntegrationTests(TestCase):
             "title": "Tarefa de Integração",
             "description": "Uma tarefa criada durante o teste de integração",
             "xp_reward": 50,
-            "due_date": (timezone.localdate() + timezone.timedelta(days=2)).strftime("%Y-%m-%d"),
+            "due_date": (timezone.localdate() + timezone.timedelta(days=2)).strftime(
+                "%Y-%m-%d"
+            ),
         }
 
         # O formulário de criação retorna o template parcial tasks/partials/task_list.html sob HTMX
@@ -771,7 +779,9 @@ class TaskCRUDIntegrationTests(TestCase):
         # Verifica se o objeto foi criado no banco
         task = Task.objects.filter(title="Tarefa de Integração", user=self.user).first()
         self.assertIsNotNone(task)
-        self.assertEqual(task.description, "Uma tarefa criada durante o teste de integração")
+        self.assertEqual(
+            task.description, "Uma tarefa criada durante o teste de integração"
+        )
         self.assertEqual(task.xp_reward, 50)
 
         # Verifica se o título da tarefa aparece no HTML renderizado
@@ -788,14 +798,18 @@ class TaskCRUDIntegrationTests(TestCase):
         self.assertContains(response, "Tarefa de Integração")
 
         # Requisição HTMX para listagem com busca (q="Integração")
-        response = self.client.get(list_url, {"q": "Integração"}, HTTP_HX_REQUEST="true")
+        response = self.client.get(
+            list_url, {"q": "Integração"}, HTTP_HX_REQUEST="true"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "tasks/partials/task_list.html")
         self.assertIn(task, response.context["page_obj"])
         self.assertContains(response, "Tarefa de Integração")
 
         # Busca por algo que não existe
-        response = self.client.get(list_url, {"q": "Inexistente"}, HTTP_HX_REQUEST="true")
+        response = self.client.get(
+            list_url, {"q": "Inexistente"}, HTTP_HX_REQUEST="true"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(task, response.context["page_obj"])
         self.assertNotContains(response, "Tarefa de Integração")
@@ -813,7 +827,9 @@ class TaskCRUDIntegrationTests(TestCase):
             "title": "Tarefa de Integração Atualizada",
             "description": "Descrição atualizada no teste de integração",
             "xp_reward": 75,
-            "due_date": (timezone.localdate() + timezone.timedelta(days=3)).strftime("%Y-%m-%d"),
+            "due_date": (timezone.localdate() + timezone.timedelta(days=3)).strftime(
+                "%Y-%m-%d"
+            ),
         }
         response = self.client.post(edit_url, update_payload, HTTP_HX_REQUEST="true")
         self.assertEqual(response.status_code, 200)
@@ -823,7 +839,9 @@ class TaskCRUDIntegrationTests(TestCase):
         # Valida alteração no banco de dados
         task.refresh_from_db()
         self.assertEqual(task.title, "Tarefa de Integração Atualizada")
-        self.assertEqual(task.description, "Descrição atualizada no teste de integração")
+        self.assertEqual(
+            task.description, "Descrição atualizada no teste de integração"
+        )
         self.assertEqual(task.xp_reward, 75)
 
         # Valida retorno no HTML do fragmento da linha
@@ -846,4 +864,3 @@ class TaskCRUDIntegrationTests(TestCase):
 
         # Verifica se o item não aparece mais na listagem retornada
         self.assertNotContains(response, "Tarefa de Integração Atualizada")
-
