@@ -95,14 +95,23 @@ Caso queira buildar e rodar o container do Django de forma independente:
   Certifique-se de que nenhum outro serviço esteja usando a porta 8000 localmente (por exemplo, um servidor do Django rodando diretamente no Windows fora do Docker). Pressione `Ctrl + C` nos terminais ativos ou feche os processos locais antes de rodar o Docker.
 
 * **Rodar Comandos do Django dentro do Contêiner:**
-  Para rodar comandos como criar um novo superusuário no contêiner em execução, utilize:
-  ```powershell
-  docker compose exec web python manage.py createsuperuser
-  ```
-  Ou se estiver rodando via container independente:
-  ```powershell
-  docker exec -it <nome_do_container> python manage.py createsuperuser
-  ```
+  Para criar um novo superusuário no contêiner em execução, utilize um dos métodos abaixo:
+
+  * **Método 1: Usando Atalho do Makefile**
+    ```powershell
+    make docker-createsuperuser
+    ```
+
+  * **Método 2: Comando Direto do Docker Compose**
+    ```powershell
+    docker compose exec web python manage.py createsuperuser
+    ```
+
+  * **Dica para Git Bash (Solução do erro "the input device is not a TTY"):**
+    Se estiver usando Git Bash no Windows, use o prefixo `winpty` para alocar o console interativo:
+    ```bash
+    winpty docker compose exec web python manage.py createsuperuser
+    ```
 
 * **Limpar Cache e Imagens antigas:**
   Se precisar liberar espaço em disco no Windows:

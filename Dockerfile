@@ -28,6 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Coleta os arquivos estáticos do Django usando variáveis dummy para passar pelas validações de ambiente do Pydantic
 RUN ENVIRONMENT=local SECRET_KEY="build-time-dummy-key" DEBUG=true \
+    ALLOWED_HOSTS='["localhost"]' LANGUAGE_CODE="pt-br" TIME_ZONE="America/Sao_Paulo" \
     /app/.venv/bin/python manage.py collectstatic --noinput
 
 

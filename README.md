@@ -73,5 +73,7 @@ Este comando usa a imagem otimizada com `uv` multi-stage, aplica as migrações 
 | `make docker-run` | Builda e sobe a aplicação utilizando o Docker Compose |
 | `make docker-down` | Para e remove os contêineres ativos do Docker Compose |
 | `make docker-shell` | Abre o terminal interativo (sh) dentro do contêiner do Django |
+| `make docker-build` | Compila (builda) as imagens do Docker Compose |
+| `make docker-up` | Apenas inicia os contêineres do Docker Compose (sem rebuildar) |
 | `make docker-migrate` | Executa as migrações de banco diretamente no contêiner |
-| `make docker-createsuperuser` | Cria um superusuário administrador dentro do contêiner |
+| `make docker-createsuperuser` | Cria um superusuário administrador de forma interativa |

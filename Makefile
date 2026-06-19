@@ -11,9 +11,13 @@ help:
 	@echo "  make format         - Formata o codigo (ruff format)"
 	@echo "  make test           - Executa a suite de testes com pytest"
 	@echo "  make check          - Valida lint e formatacao (usado no CI)"
-	@echo "  make docker-run     - Builda e sobe a aplicacao usando Docker Compose"
-	@echo "  make docker-down    - Para os containers do Docker Compose"
-	@echo "  make docker-shell   - Abre shell interativo no container Django"
+	@echo "  make docker-run            - Builda e sobe a aplicacao usando Docker Compose"
+	@echo "  make docker-down           - Para os containers do Docker Compose"
+	@echo "  make docker-shell          - Abre shell interativo no container Django"
+	@echo "  make docker-build          - Builda as imagens do Docker Compose"
+	@echo "  make docker-up             - Sobe os containers do Docker Compose"
+	@echo "  make docker-migrate        - Executa as migrações dentro do container"
+	@echo "  make docker-createsuperuser - Cria um superusuário interativamente"
 
 setup:
 	uv run python setup.py
@@ -63,4 +67,4 @@ docker-migrate:
 	docker compose exec web python manage.py migrate
 
 docker-createsuperuser:
-	docker compose exec web python manage.py createsuperuser
+	docker compose exec web python manage.py createsuperuser
