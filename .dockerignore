@@ -1,0 +1,38 @@
+# Git
+.git
+.github
+.gitignore
+
+# Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.coverage
+.python-version
+
+# Django local database & configurations
+db.sqlite3
+db.sqlite3-journal
+.env
+.env.production.sample
+.env.sample
+
+# Virtual environment
+.venv/
+
+# Static and media directories
+staticfiles/
+media/
+
+# IDE files
+.vscode/
+.idea/
+.cursor/
+
+# Docker files
+.dockerignore
+docker-compose.yml
+Dockerfile
