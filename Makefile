@@ -11,6 +11,9 @@ help:
 	@echo "  make format         - Formata o codigo (ruff format)"
 	@echo "  make test           - Executa a suite de testes com pytest"
 	@echo "  make check          - Valida lint e formatacao (usado no CI)"
+	@echo "  make docker-run     - Builda e sobe a aplicacao usando Docker Compose"
+	@echo "  make docker-down    - Para os containers do Docker Compose"
+	@echo "  make docker-shell   - Abre shell interativo no container Django"
 
 setup:
 	uv run python setup.py
@@ -38,3 +41,26 @@ test:
 
 check: lint
 	uv run ruff format --check .
+
+# --- DOCKER COMMANDS ---
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up
+
+docker-down:
+	docker compose down
+
+docker-run:
+	docker compose up --build
+
+docker-shell:
+	docker compose exec web sh
+
+docker-migrate:
+	docker compose exec web python manage.py migrate
+
+docker-createsuperuser:
+	docker compose exec web python manage.py createsuperuser
