@@ -80,3 +80,29 @@ LOGOUT_REDIRECT_URL = "login"
 
 LOGIN_RATELIMIT_LIMIT = settings.LOGIN_RATELIMIT_LIMIT
 LOGIN_RATELIMIT_PERIOD = settings.LOGIN_RATELIMIT_PERIOD
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "core.logging.JSONFormatter",
+        },
+        "simple": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+        },
+    },
+    "loggers": {
+        "critical_actions": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

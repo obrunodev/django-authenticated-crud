@@ -1,12 +1,28 @@
+import logging
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
 from accounts.models import OwnedModel, OwnedQuerySet
 
+logger = logging.getLogger("critical_actions")
+
 
 class TaskQuerySet(OwnedQuerySet):
     def delete(self):
+        tasks = list(self)
+        for task in tasks:
+            logger.info(
+                f"Tarefa excluída: {task.title}",
+                extra={
+                    "action": "task_deleted",
+                    "task_id": task.id,
+                    "task_title": task.title,
+                    "user_id": task.user.id,
+                    "username": task.user.username,
+                },
+            )
         return self.update(is_deleted=True, deleted_at=timezone.now())
 
 
@@ -114,3 +130,13 @@ class Task(OwnedModel):
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.save(update_fields=["is_deleted", "deleted_at"])
+        logger.info(
+            f"Tarefa excluída: {self.title}",
+            extra={
+                "action": "task_deleted",
+                "task_id": self.id,
+                "task_title": self.title,
+                "user_id": self.user.id,
+                "username": self.user.username,
+            },
+        )
